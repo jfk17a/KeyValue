@@ -18,6 +18,8 @@ import androidx.lifecycle.ViewModelProviders;
 
 import com.example.keyvalue.R;
 
+import org.w3c.dom.Text;
+
 import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -25,10 +27,12 @@ import java.util.TimerTask;
 public class DashboardFragment extends Fragment {
     public int START_TIME_IN_MILLIS = 30000;
     private TextView timer;
+    private TextView highScoreView;
     private DashboardViewModel dashboardViewModel;
     private CountDownTimer countDownTimer;
-
-    private boolean timerRunning;
+    Button resetButton;
+    Button startStopButton;
+    private boolean timerRunning = false;
 
     private long timeLeftInMillis = START_TIME_IN_MILLIS;
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -40,30 +44,69 @@ public class DashboardFragment extends Fragment {
             public void onChanged(@Nullable String s) { textView.setText(s);
             }
         });
+
+        highScoreView = root.findViewById(R.id.high_score_view);
         timer = root.findViewById(R.id.CountDown);
         Button button = root.findViewById(R.id.mash_button);
+        startStopButton = root.findViewById(R.id.start_stop);
+        resetButton = root.findViewById(R.id.reset_button);
+
+        updateHighScore();
+
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startTimer();
-                SharedPreferences sharedPref = getActivity().getPreferences(Context.MODE_PRIVATE);
-                int defaultValue = getResources().getInteger(R.integer.saved_times_pressed_default_key);
-                int timesPressed = sharedPref.getInt(getString(R.string.saved_button_press_count_key), defaultValue);
 
+                SharedPreferences sharedPref = getActivity().getPreferences(Context.MODE_PRIVATE);
+                int defaultValue = getResources().getInteger(R.integer.high_score_number);
+                int timesPressed = sharedPref.getInt(getString(R.string.button_mash), defaultValue);
+                SharedPreferences.Editor editor = sharedPref.edit();
+
+                startTimer();
+                updateHighScore();
                 int newTimesPressed = timesPressed + 1;
 
-                SharedPreferences.Editor editor = sharedPref.edit();
-                editor.putInt(getString(R.string.saved_button_press_count_key), newTimesPressed);
-                editor.apply();
+
 
                 // be amazing, do something
-                textView.setText("Button has been pressed " + sharedPref.getInt(getString(R.string.saved_button_press_count_key), getResources().getInteger(R.integer.saved_times_pressed_default_key))+ " times!");
+                textView.setText("Button has been pressed " + Integer.toString(newTimesPressed) + " times!");
+
+                if (newTimesPressed > sharedPref.getInt(getString(R.string.high_score),defaultValue)) {
+                    editor.putInt(getString(R.string.button_mash), newTimesPressed);
+                    editor.apply();
+                    editor.putInt(getString(R.string.high_score), newTimesPressed);
+                    editor.apply();
+                } else {
+                    editor.putInt(getString(R.string.button_mash), newTimesPressed);
+                    editor.apply();
+                }
+            }
+        });
+
+        startStopButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (timerRunning = true) {
+                    pauseTimer();
+                } else {
+                    startTimer();
+                }
+            }
+        });
+
+        resetButton.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v){
+                resetTimer();
             }
         });
         return root;
     }
 
     private void startTimer() {
+        SharedPreferences sharedPref = getActivity().getPreferences(Context.MODE_PRIVATE);
+        final SharedPreferences.Editor editor = sharedPref.edit();
+
         countDownTimer = new CountDownTimer(timeLeftInMillis, 1000) {
             @Override
             public void onTick(long millisUntilFinished) {
@@ -74,15 +117,35 @@ public class DashboardFragment extends Fragment {
             @Override
             public void onFinish() {
                 timerRunning = false;
-                //buttonStartPause.setText("Start");
-                //buttonStartPause.setVisibility(View.INVISIBLE);
-                //buttonReset.setVisibility(View.VISIBLE);
+                editor.putInt(getString(R.string.button_mash), 0);
+                editor.apply();
+                startStopButton.setText("Start");
+                startStopButton.setVisibility(View.INVISIBLE);
+                resetButton.setVisibility(View.VISIBLE);
             }
         }.start();
 
         timerRunning = true;
-        //buttonStartPause.setText("pause");
-        //buttonReset.setVisibility(View.INVISIBLE);
+        startStopButton.setText("pause");
+        resetButton.setVisibility(View.INVISIBLE);
+    }
+
+    private void pauseTimer() {
+        countDownTimer.cancel();
+        timerRunning = false;
+        startStopButton.setText("Start");
+        resetButton.setVisibility(View.VISIBLE);
+    }
+
+    private void resetTimer() {
+        SharedPreferences sharedPref = getActivity().getPreferences(Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPref.edit();
+        timeLeftInMillis = START_TIME_IN_MILLIS;
+        updateCountDownText();
+        editor.putInt(getString(R.string.button_mash), 0);
+        editor.apply();
+        resetButton.setVisibility(View.INVISIBLE);
+        startStopButton.setVisibility(View.VISIBLE);
     }
 
     private void updateCountDownText() {
@@ -91,5 +154,12 @@ public class DashboardFragment extends Fragment {
         String timeLeftFormatted = String.format(Locale.getDefault(), "%02d", seconds);
 
         timer.setText(timeLeftFormatted);
+    }
+
+    private void updateHighScore(){
+        SharedPreferences sharedPref = getActivity().getPreferences(Context.MODE_PRIVATE);
+        int defaultValue = getResources().getInteger(R.integer.high_score_number);
+
+        highScoreView.setText("High Score Is " + Integer.toString(sharedPref.getInt(getString(R.string.high_score), defaultValue)) + "!");
     }
 }
