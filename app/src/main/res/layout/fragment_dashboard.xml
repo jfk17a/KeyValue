@@ -50,16 +50,6 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
-    <Button
-        android:id="@+id/start_stop"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="32dp"
-        android:layout_marginBottom="32dp"
-        android:text="Start"
-        app:layout_constraintBottom_toTopOf="@+id/reset_button"
-        app:layout_constraintStart_toStartOf="parent" />
-
     <TextView
         android:id="@+id/high_score_view"
         android:layout_width="wrap_content"

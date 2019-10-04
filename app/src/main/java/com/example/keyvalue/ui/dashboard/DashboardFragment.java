@@ -31,7 +31,6 @@ public class DashboardFragment extends Fragment {
     private DashboardViewModel dashboardViewModel;
     private CountDownTimer countDownTimer;
     Button resetButton;
-    Button startStopButton;
     private boolean timerRunning = false;
 
     private long timeLeftInMillis = START_TIME_IN_MILLIS;
@@ -48,7 +47,6 @@ public class DashboardFragment extends Fragment {
         highScoreView = root.findViewById(R.id.high_score_view);
         timer = root.findViewById(R.id.CountDown);
         Button button = root.findViewById(R.id.mash_button);
-        startStopButton = root.findViewById(R.id.start_stop);
         resetButton = root.findViewById(R.id.reset_button);
 
         updateHighScore();
@@ -83,23 +81,13 @@ public class DashboardFragment extends Fragment {
             }
         });
 
-        startStopButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (timerRunning = true) {
-                    pauseTimer();
-                } else {
-                    startTimer();
-                }
-            }
-        });
-
         resetButton.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v){
                 resetTimer();
             }
         });
+
         return root;
     }
 
@@ -110,8 +98,13 @@ public class DashboardFragment extends Fragment {
         countDownTimer = new CountDownTimer(timeLeftInMillis, 1000) {
             @Override
             public void onTick(long millisUntilFinished) {
-                timeLeftInMillis = millisUntilFinished;
-                updateCountDownText();
+                if (timerRunning) {
+                    timeLeftInMillis = millisUntilFinished;
+                    updateCountDownText();
+                } else {
+                    onFinish();
+                    timeLeftInMillis = START_TIME_IN_MILLIS;
+                }
             }
 
             @Override
@@ -119,41 +112,29 @@ public class DashboardFragment extends Fragment {
                 timerRunning = false;
                 editor.putInt(getString(R.string.button_mash), 0);
                 editor.apply();
-                startStopButton.setText("Start");
-                startStopButton.setVisibility(View.INVISIBLE);
-                resetButton.setVisibility(View.VISIBLE);
             }
         }.start();
 
         timerRunning = true;
-        startStopButton.setText("pause");
-        resetButton.setVisibility(View.INVISIBLE);
-    }
-
-    private void pauseTimer() {
-        countDownTimer.cancel();
-        timerRunning = false;
-        startStopButton.setText("Start");
-        resetButton.setVisibility(View.VISIBLE);
     }
 
     private void resetTimer() {
+        countDownTimer.cancel();
         SharedPreferences sharedPref = getActivity().getPreferences(Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPref.edit();
         timeLeftInMillis = START_TIME_IN_MILLIS;
         updateCountDownText();
         editor.putInt(getString(R.string.button_mash), 0);
         editor.apply();
-        resetButton.setVisibility(View.INVISIBLE);
-        startStopButton.setVisibility(View.VISIBLE);
+        timerRunning = false;
     }
 
     private void updateCountDownText() {
+
         int seconds = (int) (timeLeftInMillis / 1000) % 60;
-
         String timeLeftFormatted = String.format(Locale.getDefault(), "%02d", seconds);
-
         timer.setText(timeLeftFormatted);
+
     }
 
     private void updateHighScore(){
