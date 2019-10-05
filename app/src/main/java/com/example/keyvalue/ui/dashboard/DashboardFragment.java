@@ -25,12 +25,11 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 public class DashboardFragment extends Fragment {
-    public int START_TIME_IN_MILLIS = 30000;
+    public int START_TIME_IN_MILLIS = 5000;
     private TextView timer;
     private TextView highScoreView;
     private DashboardViewModel dashboardViewModel;
     private CountDownTimer countDownTimer;
-    Button resetButton;
     private boolean timerRunning = false;
 
     private long timeLeftInMillis = START_TIME_IN_MILLIS;
@@ -47,7 +46,6 @@ public class DashboardFragment extends Fragment {
         highScoreView = root.findViewById(R.id.high_score_view);
         timer = root.findViewById(R.id.CountDown);
         Button button = root.findViewById(R.id.mash_button);
-        resetButton = root.findViewById(R.id.reset_button);
 
         updateHighScore();
 
@@ -60,7 +58,10 @@ public class DashboardFragment extends Fragment {
                 int timesPressed = sharedPref.getInt(getString(R.string.button_mash), defaultValue);
                 SharedPreferences.Editor editor = sharedPref.edit();
 
-                startTimer();
+                if(!timerRunning) {
+                    startTimer();
+                }
+
                 updateHighScore();
                 int newTimesPressed = timesPressed + 1;
 
@@ -81,13 +82,6 @@ public class DashboardFragment extends Fragment {
             }
         });
 
-        resetButton.setOnClickListener(new View.OnClickListener(){
-            @Override
-            public void onClick(View v){
-                resetTimer();
-            }
-        });
-
         return root;
     }
 
@@ -98,18 +92,15 @@ public class DashboardFragment extends Fragment {
         countDownTimer = new CountDownTimer(timeLeftInMillis, 1000) {
             @Override
             public void onTick(long millisUntilFinished) {
-                if (timerRunning) {
-                    timeLeftInMillis = millisUntilFinished;
-                    updateCountDownText();
-                } else {
-                    onFinish();
-                    timeLeftInMillis = START_TIME_IN_MILLIS;
-                }
+                timeLeftInMillis = millisUntilFinished;
+                updateCountDownText();
             }
 
             @Override
             public void onFinish() {
                 timerRunning = false;
+                timeLeftInMillis = START_TIME_IN_MILLIS;
+                updateCountDownText();
                 editor.putInt(getString(R.string.button_mash), 0);
                 editor.apply();
             }
@@ -118,21 +109,10 @@ public class DashboardFragment extends Fragment {
         timerRunning = true;
     }
 
-    private void resetTimer() {
-        countDownTimer.cancel();
-        SharedPreferences sharedPref = getActivity().getPreferences(Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = sharedPref.edit();
-        timeLeftInMillis = START_TIME_IN_MILLIS;
-        updateCountDownText();
-        editor.putInt(getString(R.string.button_mash), 0);
-        editor.apply();
-        timerRunning = false;
-    }
-
     private void updateCountDownText() {
 
         int seconds = (int) (timeLeftInMillis / 1000) % 60;
-        String timeLeftFormatted = String.format(Locale.getDefault(), "%02d", seconds);
+        String timeLeftFormatted = String.format(Locale.getDefault(), "%2d", seconds);
         timer.setText(timeLeftFormatted);
 
     }
